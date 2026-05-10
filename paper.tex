@@ -1,0 +1,713 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1.15in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\F}{\mathbb F}
+\newcommand{\E}{\mathbb E}
+\newcommand{\Prb}{\mathbb P}
+\newcommand{\Inf}{\operatorname{Inf}}
+\newcommand{\AS}{\operatorname{AS}}
+\newcommand{\sens}{\operatorname{S}}
+
+\title{A monotone average--max sensitivity construction with a fixed exponent above \(2/3\)}
+\author{Slava Naprienko}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The Servedio--Tan open problem asks whether every monotone Boolean function \(f\) satisfies \(\AS(f)=o(\sens(f))\) \cite{FHH+14,ScTa13}. We construct monotone Boolean functions \(F_m\) with \(\sens(F_m)\to\infty\) and
+\[
+    \AS(F_m) \ge \sens(F_m)^{2/3+\eta}
+\]
+for all \(m\), where \(\eta>8\cdot 10^{-4}\) is an absolute constant. This improves the best previous explicit average--max sensitivity tradeoff for monotone Boolean functions, due to O'Donnell and Servedio \cite{OS07}, who achieved exponent \(\alpha_{\mathrm{OS}}=\log_2(6-2\sqrt 5)\approx 0.6115\).
+\end{abstract}
+
+\section{Introduction}
+
+Let \(f:\{0,1\}^n\to\{0,1\}\) be a monotone Boolean function. Two standard complexity measures of \(f\) are its average sensitivity (also called total influence) \(\AS(f)=\Inf_{1/2}(f)\), the average over a uniform input of the number of pivotal coordinates, and its (maximum) sensitivity \(\sens(f)\), the corresponding worst-case quantity. Trivially \(\AS(f)\le\sens(f)\), and Servedio and Tan (recorded under the heading \emph{Average versus Max Sensitivity for Monotone Functions} in \cite{FHH+14}) asked whether monotone functions in fact satisfy
+\[
+    \AS(f)=o(\sens(f))
+    \qquad
+    \text{as }\sens(f)\to\infty.
+\]
+In the more explicit form stated by Scheder and Tan \cite{ScTa13}, the conjecture predicts absolute constants \(K>0\) and \(\delta<1\) such that \(\AS(f)\le K\cdot\sens(f)^\delta\) for every monotone \(f\). A natural way to track progress is through the exponent
+\[
+    \alpha(f_n)
+    =
+    \liminf_{n\to\infty}
+    \frac{\log\AS(f_n)}{\log\sens(f_n)}.
+\]
+The Servedio--Tan question asks whether \(\alpha(f_n)<1\) for every monotone sequence with \(\sens(f_n)\to\infty\). In the opposite direction, O'Donnell and Servedio \cite{OS07} gave a recursive construction achieving
+\[
+    \AS(f_n)
+    \ge
+    \sens(f_n)^{\alpha_{\mathrm{OS}}-o(1)},
+    \qquad
+    \alpha_{\mathrm{OS}}=\log_2(6-2\sqrt 5)\approx 0.6115,
+\]
+by composing a four-variable base gadget. As noted in \cite{ScTa13}, this remained the best known explicit lower bound on \(\alpha\) for monotone functions.
+
+\begin{remark}
+A small improvement over the O'Donnell--Servedio exponent is already obtained from the Fano-plane line-containment function. This monotone function has sensitivity \(3\) and average sensitivity \(63/32\), so recursive composition gives exponent
+\[
+    \frac{\log(63/32)}{\log 3}\approx 0.6166,
+\]
+slightly larger than \(\alpha_{\mathrm{OS}}\approx 0.6115\). We do not use this finite gadget below; the main construction gives a qualitatively stronger exponent above \(2/3\).
+\end{remark}
+
+Our main result is the following.
+
+\begin{theorem}\label{thm:main}
+There exist an absolute constant \(\eta>0\) and a sequence of monotone Boolean functions \(F_m\) with \(\sens(F_m)\to\infty\) such that
+\[
+    \AS(F_m)\ge \sens(F_m)^{2/3+\eta}
+\]
+for every \(m\ge 1\).
+\end{theorem}
+
+The geometric heart of the argument is an irredundant affine-hyperplane cover bound for \(\F_Q^d\): it forces a \(\log Q\) gap between the two one-sided sensitivities of an algebraic DNF block whose terms are graphs of low-degree polynomials. Pairing such a block with the dual of a second one yields a \emph{biased cascade} whose output is again low-bias, so the recursion can be confined to a regime of small input bias without an exact-balancing step. Iterating amplifies the per-level logarithmic saving into a fixed exponent above \(2/3\). The main text establishes the qualitative statement; the explicit value \(\eta=8\cdot 10^{-4}\) is derived in Appendix~\ref{app:explicit}.
+
+\subsection*{Acknowledgements}
+The arguments in this paper were developed and formalized in a harness combining two large language models: ChatGPT~5.5~Pro was used to generate and refine the mathematical arguments, and Claude~Opus~4.7 was used for organization and formalization of the writeup, as well as for formalizing the underlying arguments in Lean~4.
+
+\section{Definitions and elementary composition facts}
+
+All Boolean functions are written in \(0/1\) notation. If \(V\) is a finite set, we identify an input \(x\in\{0,1\}^V\) with the set
+\[
+    X=\{v\in V:x_v=1\}.
+\]
+A function \(f:\{0,1\}^V\to\{0,1\}\) is monotone if \(X\subseteq Y\) implies \(f(X)\le f(Y)\).
+
+For \(p\in(0,1)\), let \(X\sim\mu_p\) denote the random subset of \(V\) in which each element is included independently with probability \(p\). The \(p\)-biased total influence is
+\[
+    \Inf_p(f)
+    =
+    \sum_{v\in V}
+    \Prb_{X\sim\mu_p}\bigl[f(X)\ne f(X\triangle\{v\})\bigr].
+\]
+The uniform total influence is the average sensitivity:
+\[
+    \AS(f)=\Inf_{1/2}(f).
+\]
+For an input \(X\), let \(\sens(f,X)\) be the number of coordinates whose flip changes the value of \(f\), and put
+\[
+    \sens(f)=\max_X \sens(f,X).
+\]
+For monotone functions it is useful to separate the two sides:
+\[
+    \sens_0(f)=
+    \max_{f(X)=0}
+    \bigl|\{v\notin X:f(X\cup\{v\})=1\}\bigr|,
+\]
+\[
+    \sens_1(f)=
+    \max_{f(X)=1}
+    \bigl|\{v\in X:f(X\setminus\{v\})=0\}\bigr|.
+\]
+Then
+\[
+    \sens(f)=\max\{\sens_0(f),\sens_1(f)\}.
+\]
+
+The monotone dual of \(f\) is
+\[
+    f^\dagger(X)=1-f(V\setminus X).
+\]
+Then
+\[
+    \sens_0(f^\dagger)=\sens_1(f),
+    \qquad
+    \sens_1(f^\dagger)=\sens_0(f),
+\]
+and
+\[
+    \Inf_p(f^\dagger)=\Inf_{1-p}(f).
+\]
+
+If \(f:\{0,1\}^r\to\{0,1\}\) and \(g:\{0,1\}^m\to\{0,1\}\), their block composition \(f\circ g\) is obtained by replacing each input bit of \(f\) by an independent copy of \(g\). If
+\[
+    q=\Prb[g(X)=1]
+\]
+under the uniform measure, then
+\begin{equation}\label{eq:inf-composition}
+    \Inf(f\circ g)=\Inf_q(f)\Inf(g).
+\end{equation}
+Indeed, a variable inside the \(i\)-th copy of \(g\) is pivotal exactly when it is pivotal for that copy of \(g\), and the \(i\)-th coordinate of the outer function is pivotal at the vector of block outputs. The other block outputs are independent \(q\)-biased bits, and summing over all variables gives \eqref{eq:inf-composition}.
+
+For monotone functions,
+\begin{equation}\label{eq:sens-composition}
+    \sens_0(f\circ g)\le \sens_0(f)\sens_0(g),
+    \qquad
+    \sens_1(f\circ g)\le \sens_1(f)\sens_1(g).
+\end{equation}
+For example, at a zero-input of \(f\circ g\), only upward-pivotal coordinates of the outer function can matter, and each corresponding block contributes at most \(\sens_0(g)\) upward-pivotal inner variables. The proof on the one-side is identical.
+
+\section{A finite affine-cover lemma}
+
+We use the following finite-geometric fact.
+
+\begin{lemma}[Affine-cover bound]\label{lem:affine-cover}
+Let \(\F_Q^d\) be a \(d\)-dimensional affine space over the finite field \(\F_Q\). Suppose affine hyperplanes
+\[
+    H_1,\dots,H_m
+\]
+cover \(\F_Q^d\), and suppose the cover is irredundant: for every \(i\), the hyperplane \(H_i\) contains a point not lying in any other \(H_j\). Then
+\[
+    m\le d(Q-1)+1.
+\]
+Equivalently, in any affine-hyperplane cover of \(\F_Q^d\), the number of essential hyperplanes is at most \(d(Q-1)+1\).
+\end{lemma}
+
+\begin{proof}
+Choose affine linear forms \(\ell_i\) with
+\[
+    H_i=\{x:\ell_i(x)=0\}.
+\]
+The cover condition says that
+\[
+    P(x):=\prod_{i=1}^m \ell_i(x)
+\]
+vanishes at every point of \(\F_Q^d\). Work in the finite-function algebra
+\[
+    \mathcal A_d
+    =
+    \F_Q[y_1,\dots,y_d]/(y_1^Q-y_1,\dots,y_d^Q-y_d).
+\]
+Every function on \(\F_Q^d\) has a unique reduced representative in which each variable has degree at most \(Q-1\). The product above is therefore zero in \(\mathcal A_d\).
+
+Irredundancy means that deleting any one factor gives a nonzero function. Thus \(P\) is a minimal zero product of affine linear forms in \(\mathcal A_d\). We use the following elementary form of the finite-field degree bound: a minimal zero product of affine linear forms in \(\mathcal A_d\) has length at most \(d(Q-1)+1\). This follows by reducing products in the basis of monomials
+\[
+    y_1^{a_1}\cdots y_d^{a_d},
+    \qquad 0\le a_j\le Q-1.
+\]
+Before the final multiplication the product is a nonzero reduced polynomial. A nonzero reduced polynomial has total degree at most \(d(Q-1)\), and multiplication by one further affine linear form is the only possible step at which the first zero product can occur. Hence the length of a minimal zero product is at most \(d(Q-1)+1\). Applying this to \(P\) gives the desired bound.
+\end{proof}
+
+\section{The star-free algebraic DNF block}
+
+The main block is a DNF whose terms are polynomial graphs. The absence of the deterministic star is important: the zero-sensitivity is then governed by the affine-cover lemma instead of by the total number of variables.
+
+\begin{proposition}[Algebraic block]\label{prop:block}
+Fix constants \(0<a<b<1\) and \(\Lambda\in(0,1)\). There are constants \(c_0,c_1,C_1>0\) and \(Q_0\), depending on \(a,b,\Lambda\), such that for every prime power \(Q\ge Q_0\) and every \(p\in[a,b]\), there is a monotone Boolean function \(R_{p,Q}\) satisfying
+\[
+    c_0\le \Prb_{\mu_p}[R_{p,Q}=1]\le \Lambda,
+\]
+\[
+    \Inf_p(R_{p,Q})\ge c_1 Q,
+\]
+and
+\[
+    \sens_1(R_{p,Q})\le Q,
+    \qquad
+    \sens_0(R_{p,Q})\le C_1\frac{Q^2}{\log Q}.
+\]
+\end{proposition}
+
+\begin{proof}
+Let
+\[
+    D_a=\exp(a^{-1}-1).
+\]
+Choose an integer \(K\) so large that
+\begin{equation}\label{eq:K-choice}
+    D_a b^{K-1}\le \frac14,
+    \qquad
+    b^{K-1}\le \Lambda.
+\end{equation}
+All constants below depend only on \(a,b\).
+
+Fix \(p\in[a,b]\), and write
+\[
+    A=\log(1/p).
+\]
+For sufficiently large \(Q\), define
+\[
+    d=\left\lfloor \frac{(Q-K-2)A}{\log Q}\right\rfloor,
+\]
+and
+\[
+    L=\left\lfloor \frac{d\log Q}{A}+K\right\rfloor.
+\]
+Then, uniformly in \(p\in[a,b]\),
+\begin{equation}\label{eq:L-range}
+    \frac Q2\le L\le Q
+\end{equation}
+for all sufficiently large \(Q\). Also
+\begin{equation}\label{eq:d-bound}
+    d\le C\frac{Q}{\log Q}.
+\end{equation}
+
+Choose a set \(E\subseteq\F_Q\) with \(|E|=L\). The variable set is
+\[
+    V=E\times\F_Q.
+\]
+For every polynomial \(P\in\F_Q[z]\) of degree less than \(d\), define its graph over \(E\) by
+\[
+    \Gamma(P)=\{(t,P(t)):t\in E\}\subseteq V.
+\]
+Thus \(|\Gamma(P)|=L\). Define
+\[
+    R_{p,Q}(X)=1
+    \quad\Longleftrightarrow\quad
+    \Gamma(P)\subseteq X
+    \text{ for some }P\in\F_Q[z],\ \deg P<d.
+\]
+This is a monotone DNF whose terms all have size \(L\).
+
+First consider sensitivity. Since every term has size \(L\),
+\[
+    \sens_1(R_{p,Q})\le L\le Q.
+\]
+Indeed, if a term \(\Gamma(P)\) is already present, deleting a coordinate outside that term does not destroy that witness.
+
+Now let \(X\) be a zero-input and set
+\[
+    C=V\setminus X.
+\]
+Since \(R_{p,Q}(X)=0\), every polynomial graph meets \(C\). For each missing point \((t,y)\in C\), consider the affine hyperplane in the coefficient space \(\F_Q^d\)
+\[
+    H_{t,y}=\{P:\deg P<d,\ P(t)=y\}.
+\]
+The family \(\{H_{t,y}:(t,y)\in C\}\) covers all of \(\F_Q^d\). Moreover, the point \((t,y)\) is upward-pivotal for \(R_{p,Q}\) at \(X\) precisely when \(H_{t,y}\) is essential in this cover: there is a polynomial graph meeting \(C\) exactly at \((t,y)\). By Lemma \ref{lem:affine-cover}, the number of such essential hyperplanes is at most
+\[
+    d(Q-1)+1.
+\]
+Using \eqref{eq:d-bound},
+\[
+    \sens_0(R_{p,Q})\le C_1\frac{Q^2}{\log Q}.
+\]
+
+It remains to prove the density and influence bounds. Let \(X\sim\mu_p\), and let
+\[
+    Z(X)=\bigl|\{P:\deg P<d,\ \Gamma(P)\subseteq X\}\bigr|
+\]
+be the number of satisfied polynomial-graph terms. Since there are \(Q^d\) polynomials of degree less than \(d\),
+\[
+    \lambda:=\E Z=Q^d p^L.
+\]
+By the definition of \(L\),
+\[
+    L-\frac{d\log Q}{\log(1/p)}\in[K-1,K].
+\]
+Therefore
+\begin{equation}\label{eq:lambda-bounds}
+    a^K\le \lambda\le b^{K-1}.
+\end{equation}
+
+We estimate the second factorial moment. For distinct polynomials \(P,R\),
+\[
+    |\Gamma(P)\cap\Gamma(R)|
+    =
+    |\{t\in E:P(t)=R(t)\}|.
+\]
+For a nonzero polynomial \(S\) of degree less than \(d\), define
+\[
+    z(S)=|\{t\in E:S(t)=0\}|.
+\]
+Then
+\[
+    \E[Z(Z-1)]
+    =
+    Q^d p^{2L}\sum_{\substack{S\ne0\\ \deg S<d}}p^{-z(S)}.
+\]
+Put \(\theta=p^{-1}-1\). Since
+\[
+    p^{-z(S)}=(1+\theta)^{z(S)}
+    =
+    \sum_{T\subseteq\{t\in E:S(t)=0\}}\theta^{|T|},
+\]
+we have
+\[
+    \sum_{\substack{S\ne0\\ \deg S<d}}p^{-z(S)}
+    \le
+    \sum_{j=0}^{d-1}\binom Lj\theta^j Q^{d-j}.
+\]
+Indeed, after prescribing \(j<d\) roots in \(E\), there are at most \(Q^{d-j}\) degree-\(<d\) polynomials satisfying those homogeneous linear conditions. Hence
+\[
+    \sum_{\substack{S\ne0\\ \deg S<d}}p^{-z(S)}
+    \le
+    Q^d\left(1+\frac{\theta}{Q}\right)^L
+    \le
+    Q^d\exp(a^{-1}-1)
+    =D_a Q^d,
+\]
+where we used \(L\le Q\) and \(p\ge a\). Thus
+\[
+    \E[Z(Z-1)]\le D_a\lambda^2.
+\]
+By \eqref{eq:K-choice} and \eqref{eq:lambda-bounds},
+\[
+    \E[Z(Z-1)]\le \frac14\lambda.
+\]
+Since \(Z\) is integer-valued,
+\[
+    \Prb[Z=1]
+    \ge
+    \E Z-\E[Z(Z-1)]
+    \ge
+    \frac34\lambda
+    \ge
+    \frac34a^K.
+\]
+Consequently
+\[
+    \Prb_{\mu_p}[R_{p,Q}=1]\ge \frac34a^K.
+\]
+The upper bound follows from Markov's inequality:
+\[
+    \Prb_{\mu_p}[R_{p,Q}=1]
+    =
+    \Prb[Z\ge1]
+    \le \E Z
+    =\lambda
+    \le b^{K-1}
+    \le \Lambda.
+\]
+Thus the density bounds hold with \(c_0=\frac34a^K\).
+
+Finally, on the event \(Z=1\), there is a unique satisfied graph \(\Gamma(P)\). Deleting any of its \(L\) variables destroys the unique witness and cannot create a new one. Therefore
+\[
+    \sens(R_{p,Q},X)\ge L
+\]
+on this event. Since total influence is the expected sensitivity under \(\mu_p\),
+\[
+    \Inf_p(R_{p,Q})
+    \ge
+    L\Prb[Z=1]
+    \ge
+    \frac Q2\cdot\frac34a^K
+    \ge c_1 Q.
+\]
+This proves the proposition.
+\end{proof}
+
+The affine-cover bound \(d(Q-1)+1\) used in the proof above is sharp for the polynomial-graph construction: no further structural improvement of \(\sens_0\) is possible within this family.
+
+\begin{lemma}[Tightness of the polynomial-graph zero-sensitivity bound]\label{lem:tightness}
+Assume \(L\ge d+1\). Then there is a zero input \(X\) for \(R_{p,Q}\) with
+\[
+    \sens_0(R_{p,Q},X)=d(Q-1)+1.
+\]
+\end{lemma}
+
+\begin{proof}
+Choose distinct points \(t_1,\dots,t_d,t_*\in E\), and put
+\[
+    C=\bigl\{(t_i,y):1\le i\le d,\ y\in\F_Q^\times\bigr\}\cup\bigl\{(t_*,0)\bigr\},
+    \qquad
+    X:=V\setminus C.
+\]
+We first show \(R_{p,Q}(X)=0\): every polynomial \(P\) with \(\deg P<d\) has \(\Gamma(P)\) meeting \(C\). Indeed, if \(P(t_i)\ne 0\) for some \(i\), then \((t_i,P(t_i))\in C\cap\Gamma(P)\); otherwise \(P\) has \(d\) roots and \(\deg P<d\), forcing \(P\equiv 0\), and \((t_*,0)\in C\cap\Gamma(P)\).
+
+Now each point of \(C\) is upward-pivotal. For \((t_i,y)\) with \(y\ne 0\), let \(\ell_i\) be the Lagrange basis polynomial of degree \(d-1\) with \(\ell_i(t_i)=1\) and \(\ell_i(t_j)=0\) for \(j\ne i\). The polynomial \(y\ell_i\) has degree \(<d\) and graph meeting \(C\) only at \((t_i,y)\) (the value at \(t_*\) is \(y\ell_i(t_*)\ne 0\) since \(t_*\notin\{t_1,\dots,t_d\}\)). For \((t_*,0)\), the zero polynomial has graph meeting \(C\) only at \((t_*,0)\). Hence \(|C|=d(Q-1)+1\) points are pivotal.
+\end{proof}
+
+\section{Biased cascade block}\label{sec:cascade}
+
+We combine two algebraic blocks under retuned biases to obtain a one-step gadget whose input and output distributions both lie in a fixed sub-interval \([p_-,\Lambda]\subset(0,1)\) bounded away from \(0\) and \(1\). This closure on a positive interval replaces an exact-balancing step and keeps the dual inner block in a high-internal-bias regime, where the affine-cover sensitivity constant is small.
+
+The proof of Proposition~\ref{prop:block} actually gives a sharper estimate on the zero-side sensitivity. Tracking the explicit dependence of \(d\) on the input bias yields
+\begin{equation}\label{eq:s0-explicit}
+    \sens_0(R_{r,Q})\le \bigl(\log(1/r)+o(1)\bigr)\frac{Q^2}{\log Q},
+    \qquad
+    \sens_1(R_{r,Q})\le Q,
+\end{equation}
+uniformly in \(r\) on any fixed compact subinterval of \((0,1)\); the constant \(\log(1/r)\) comes from \(d\le ((1+o(1))Q\log(1/r))/\log Q\) in the proof.
+
+Fix absolute constants
+\[
+    0<p_-<\Lambda<\tfrac12,
+    \qquad
+    r_0:=1-\Lambda,
+    \qquad
+    r_+:=1-p_-,
+\]
+so that \([r_0,r_+]\subset[1/2,1)\). The values \(\Lambda\), \(p_-\), \(r_0\), \(r_+\) are calibrated by a Paley--Zygmund tuning of Proposition~\ref{prop:block}: choosing \(\lambda=\Lambda\) and using the second-moment estimate of the proof, the output bias of \(R_{r,Q}\) at internal bias \(r\) lies in \([p_-,\Lambda]\) whenever \(r\in[r_0,r_+]\). The explicit values \(\Lambda=1/5\), \(p_->0.127\), \(r_0=4/5\), \(r_+<0.873\) are derived in Appendix~\ref{app:explicit}.
+
+Apply Proposition~\ref{prop:block} on the interval \([r_0,r_+]\) with this upper bound \(\Lambda\). There exist absolute constants \(c_*,C_*>0\) and a threshold \(Q_0\) such that for every \(r\in[r_0,r_+]\) and every prime power \(Q\ge Q_0\),
+\begin{equation}\label{eq:tuned-block}
+    p_-\le \Prb_r[R_{r,Q}=1]\le \Lambda,
+    \qquad
+    \Inf_r(R_{r,Q})\ge c_*Q,
+\end{equation}
+together with~\eqref{eq:s0-explicit}, which on \([r_0,r_+]\) gives
+\begin{equation}\label{eq:s0-cascade}
+    \sens_0(R_{r,Q})\le \bigl(\log(1/r_0)+o(1)\bigr)\frac{Q^2}{\log Q}=C_*\frac{Q^2}{\log Q}.
+\end{equation}
+
+\paragraph{Inner block.}
+For input bias \(p\in[p_-,\Lambda]\), define
+\[
+    B_{p,Q}:=R_{1-p,Q}^\dagger.
+\]
+Since \(1-p\in[r_0,r_+]\), the duality identities together with~\eqref{eq:tuned-block}--\eqref{eq:s0-cascade} give
+\[
+    \Inf_p(B_{p,Q})=\Inf_{1-p}(R_{1-p,Q})\ge c_*Q,
+\]
+\[
+    \sens_0(B_{p,Q})=\sens_1(R_{1-p,Q})\le Q,
+    \qquad
+    \sens_1(B_{p,Q})=\sens_0(R_{1-p,Q})\le C_*\frac{Q^2}{\log Q},
+\]
+and
+\[
+    q_p:=\Prb_p[B_{p,Q}=1]=1-\Prb_{1-p}[R_{1-p,Q}=1]\in[r_0,r_+].
+\]
+
+\paragraph{Outer block.}
+Set \(T_{q_p,Q}:=R_{q_p,Q}\). Since \(q_p\in[r_0,r_+]\), the same bounds apply:
+\[
+    \Inf_{q_p}(T_{q_p,Q})\ge c_*Q,
+    \qquad
+    \sens_1(T_{q_p,Q})\le Q,
+    \qquad
+    \sens_0(T_{q_p,Q})\le C_*\frac{Q^2}{\log Q}.
+\]
+
+\paragraph{Cascade.}
+Define
+\[
+    H_{p,Q}:=T_{q_p,Q}\circ B_{p,Q}.
+\]
+By the influence-composition identity~\eqref{eq:inf-composition},
+\[
+    \Inf_p(H_{p,Q})=\Inf_{q_p}(T_{q_p,Q})\,\Inf_p(B_{p,Q})\ge c_*^2\,Q^2.
+\]
+By the sensitivity-composition bound~\eqref{eq:sens-composition},
+\[
+    \sens_0(H_{p,Q})\le \sens_0(T_{q_p,Q})\sens_0(B_{p,Q})\le C_*\frac{Q^3}{\log Q},
+\]
+\[
+    \sens_1(H_{p,Q})\le \sens_1(T_{q_p,Q})\sens_1(B_{p,Q})\le C_*\frac{Q^3}{\log Q},
+\]
+and hence
+\[
+    \sens(H_{p,Q})\le C_*\,\frac{Q^3}{\log Q}.
+\]
+Finally, the cascade closes the recursion on \([p_-,\Lambda]\): under \(\mu_p\) the inputs to \(T_{q_p,Q}\) are i.i.d.\ \(q_p\)-biased, so by~\eqref{eq:tuned-block},
+\[
+    \Prb_p[H_{p,Q}=1]=\Prb_{q_p}[T_{q_p,Q}=1]\in[p_-,\Lambda].
+\]
+
+\begin{proposition}[Biased cascade block]\label{prop:cascade}
+There exist absolute constants \(0<p_-<\Lambda<1\), \(c,C>0\), and a prime-power threshold \(Q_0\) such that for every prime power \(Q\ge Q_0\) and every \(p\in[p_-,\Lambda]\), there is a monotone Boolean function \(H_{p,Q}\) with
+\[
+    \Prb_p[H_{p,Q}=1]\in[p_-,\Lambda],
+    \qquad
+    \Inf_p(H_{p,Q})\ge cQ^2,
+    \qquad
+    \sens(H_{p,Q})\le C\,\frac{Q^3}{\log Q}.
+\]
+\end{proposition}
+
+\section{Recursive amplification}\label{sec:recursion}
+
+We freeze one sufficiently large \(Q\) and iterate the cascade. Each level retunes the outer block to the actual output bias of the previous level, and the cascade output remains in the fixed interval \([p_-,\Lambda]\) by Proposition~\ref{prop:cascade}.
+
+By Proposition~\ref{prop:cascade}, for large \(Q\),
+\[
+    \frac{\log\Inf_p(H_{p,Q})}{\log\sens(H_{p,Q})}
+    \ge
+    \frac{\log(cQ^2)}{\log(CQ^3/\log Q)}
+    =
+    \frac{2\log Q+O(1)}{3\log Q-\log\log Q+O(1)}
+    =
+    \frac23+\frac{2\log\log Q+O(1)}{9\log Q+O(\log\log Q)},
+\]
+which is strictly larger than \(2/3\) for all sufficiently large \(Q\) and uniformly in \(p\in[p_-,\Lambda]\). Choose one such prime power \(Q_\ast\) and a number \(\rho>2/3\) with
+\[
+    \Inf_p(H_{p,Q_\ast})\ge \sens(H_{p,Q_\ast})^\rho
+    \qquad
+    \text{for every }p\in[p_-,\Lambda].
+\]
+Pick \(0<\eta<\rho-2/3\).
+
+Let \(F_1\) be any monotone Boolean function whose output bias under the uniform measure lies in \([p_-,\Lambda]\). An explicit example, valid for the values \(p_-,\Lambda\) of Appendix~\ref{app:explicit}, is the four-variable function
+\[
+    F_1(x_1,x_2,x_3,x_4):=x_1\wedge x_2\wedge(x_3\vee x_4),
+\]
+which has \(\Prb[F_1=1]=3/16\in[p_-,\Lambda]\). For \(m\ge 1\), set \(p_m:=\Prb[F_m=1]\) and define recursively
+\[
+    F_{m+1}:=H_{p_m,Q_\ast}\circ F_m.
+\]
+By Proposition~\ref{prop:cascade}, \(p_{m+1}\in[p_-,\Lambda]\), so the recursion is well-defined for every \(m\).
+
+Influence composition under the relevant intermediate bias gives
+\[
+    \AS(F_{m+1})=\Inf(F_{m+1})=\Inf_{p_m}(H_{p_m,Q_\ast})\,\Inf(F_m)\ge cQ_\ast^2\cdot\AS(F_m).
+\]
+The sensitivity-composition bound~\eqref{eq:sens-composition} gives
+\[
+    \sens(F_{m+1})\le \sens(H_{p_m,Q_\ast})\sens(F_m)\le C\frac{Q_\ast^3}{\log Q_\ast}\cdot\sens(F_m).
+\]
+Iterating,
+\[
+    \AS(F_m)\ge (cQ_\ast^2)^{m-1}\AS(F_1),
+    \qquad
+    \sens(F_m)\le \Bigl(C\frac{Q_\ast^3}{\log Q_\ast}\Bigr)^{m-1}\sens(F_1).
+\]
+Therefore
+\[
+    \AS(F_m)\ge \sens(F_m)^{2/3+\eta}
+\]
+for all sufficiently large \(m\), and after reindexing the sequence, for every \(m\ge 1\). Since \(cQ_\ast^2>1\) we have \(\AS(F_m)\to\infty\), and hence \(\sens(F_m)\to\infty\).
+
+This completes the proof of Theorem~\ref{thm:main}.
+
+\appendix
+
+\section{An explicit value of \(\eta\)}\label{app:explicit}
+
+The main text proves only the existence of an absolute constant \(\eta>0\). In this appendix we sharpen the estimates of Propositions~\ref{prop:block} and~\ref{prop:cascade} and pin down a concrete value
+\[
+    \rho>0.66757,
+    \qquad
+    \eta=8\cdot 10^{-4},
+\]
+so that
+\[
+    \AS(F_m)\ge \sens(F_m)^{2/3+8\cdot 10^{-4}}.
+\]
+The argument has the same structure as in the main text; only the constants are tightened.
+
+\subsection*{A.1. The Poisson tuning and the closure interval}
+
+Fix
+\[
+    \Lambda=\tfrac15,
+    \qquad
+    r_0=\tfrac45,
+    \qquad
+    D_0=\exp(r_0^{-1}-1)=e^{1/4}\approx 1.28403.
+\]
+In the proof of Proposition~\ref{prop:block}, applied on \([r_0,r_+]\subset[r_0,1)\), choose \(K\) so that the density parameter \(\lambda=Q^d r^L\) satisfies
+\[
+    r\,\Lambda\le \lambda\le \Lambda,
+\]
+which gives \(\lambda\in[r_0\Lambda,\Lambda]=[4/25,1/5]\) for \(r\in[r_0,r_+]\). The second-moment estimate~\eqref{eq:lambda-bounds} reads \(\E[Z(Z-1)]\le D_0\lambda^2\), so Paley--Zygmund gives
+\[
+    \Prb_r[R_{r,Q}=1]
+    \ge
+    \frac{(\E Z)^2}{\E Z^2}
+    \ge
+    \frac{\lambda}{1+D_0\lambda}
+    \ge
+    \frac{r_0\Lambda}{1+D_0\Lambda}
+    =:p_->0.127.
+\]
+Set \(r_+:=1-p_-<0.873\). The output bias of \(R_{r,Q}\) at any internal bias \(r\in[r_0,r_+]\) therefore lies in \([p_-,\Lambda]\), and the dual identity \(\Prb_p[B_{p,Q}=1]=1-\Prb_{1-p}[R_{1-p,Q}=1]\) places \(q_p\) back into \([r_0,r_+]\). This is the closure of the cascade asserted in Section~\ref{sec:cascade}.
+
+\subsection*{A.2. A sharper influence bound for the algebraic block}
+
+The proof of Proposition~\ref{prop:block} actually yields the second-moment estimate
+\[
+    \Inf_r(R_{r,Q})
+    \ge
+    \frac{L}{r}\bigl(\lambda-D_0\lambda^2-o(1)\bigr).
+\]
+The first moment of pairs \((P,v)\) with \(v\in\Gamma(P)\) and \(\Gamma(P)\setminus\{v\}\subseteq X,\ v\notin X\) is exactly \(L\lambda/r\); the overcount from variables pivotal at two distinct witnesses is at most \((L/r)D_0\lambda^2\). With \(\lambda\ge r_0\Lambda\), \(\lambda\le\Lambda\), \(L=(1+o(1))Q\), and \(r\le r_+\),
+\[
+    \Inf_r(R_{r,Q})
+    \ge
+    (1-o(1))Q\cdot\frac{r_0\Lambda}{r_+}\bigl(1-D_0\Lambda\bigr)
+    \ge
+    0.135\,Q.
+\]
+Explicit evaluation gives \((r_0\Lambda/r_+)(1-D_0\Lambda)>0.136\).
+
+\subsection*{A.3. The cascade constant}
+
+The cascade applies the bound of Section~A.2 twice---once to the inner block at internal bias \(1-p\in[r_0,r_+]\) and once to the outer block at internal bias \(q_p\in[r_0,r_+]\). Influence composition therefore yields
+\[
+    \Inf_p(H_{p,Q})\ge (0.135)^2\,Q^2\,(1-o(1))=0.018225\,Q^2\,(1-o(1)).
+\]
+Hence we may use
+\[
+    c=0.018225
+\]
+in Proposition~\ref{prop:cascade}.
+
+\subsection*{A.4. The sensitivity constant}
+
+Both \(B_{p,Q}\) and \(T_{q_p,Q}\) are evaluated at internal bias in \([r_0,r_+]\), so~\eqref{eq:s0-explicit} gives
+\[
+    \sens_0(R_{r,Q})\le \bigl(\log(1/r)+o(1)\bigr)\frac{Q^2}{\log Q}\le \bigl(\log\tfrac{5}{4}+o(1)\bigr)\frac{Q^2}{\log Q}
+\]
+on each side, and consequently
+\[
+    \sens(H_{p,Q})\le \bigl(\log\tfrac{5}{4}+o(1)\bigr)\frac{Q^3}{\log Q}.
+\]
+Hence we may take
+\[
+    C=\log(5/4)\approx 0.22314.
+\]
+For comparison, an exact-balancing step (avoided by the cascade) would multiply this by \(2\log 2/\log(5/4)\approx 6.21\); avoiding the balancing gadget and pushing the dual bias to \(\ge 4/5\) is the dominant source of the improvement.
+
+\subsection*{A.5. Optimization}
+
+Combining the three estimates,
+\[
+    \rho(Q)
+    \ge
+    \frac{\log(cQ^2)}{\log(CQ^3/\log Q)}+o(1)
+    =
+    \frac{2\log Q+\log c}{3\log Q-\log\log Q+\log C}+o(1).
+\]
+Writing \(x=\log Q\), the function
+\[
+    \rho(x)=\frac{2x+\log c}{3x-\log x+\log C}
+\]
+with \(c\approx 0.018225\) and \(C\approx 0.22314\) is maximized near \(x\approx 245\). Taking \(Q=2^{354}\) (so that \(\log Q\approx 245.37\)) gives
+\[
+    \rho(Q)\approx 0.66757,
+    \qquad
+    \rho(Q)-\frac{2}{3}\approx 8.9\cdot 10^{-4}.
+\]
+Rounding down to absorb floor errors and the \(o(1)\) terms, we obtain the rigorous values
+\[
+    \rho>0.66757,
+    \qquad
+    \eta=8\cdot 10^{-4}.
+\]
+
+\subsection*{A.6. Structural bottleneck}
+
+This is the best improvement that the polynomial-graph and affine-cover method gives without introducing a fundamentally new seed construction. By Lemma~\ref{lem:tightness}, the bound \(\sens_0(R_{r,Q})\le d(Q-1)+1\) is sharp for this family of DNFs, so the asymmetry \(\sens_0\sim Q^2/\log Q\) versus \(\sens_1\sim Q\) and \(\Inf\sim Q\) cannot be tightened by sharpening the cover lemma. After dual pairing, the cascade is forced into the shape \(\Inf\sim Q^2\), \(\sens\sim Q^3/\log Q\), and the exponent extraction has the form
+\[
+    \frac{2\log Q+O(1)}{3\log Q-\log\log Q+O(1)}=\frac23+O\!\left(\frac{\log\log Q}{\log Q}\right).
+\]
+Freezing one finite \(Q\) converts this logarithmic saving into a small fixed \(\eta\). A genuinely larger improvement would require a new term system simultaneously achieving \(\Inf\gg L^{1-o(1)}\), \(\sens_1\lesssim L\), and \(\sens_0\ll L^2/\log L\).
+
+\begin{thebibliography}{ScTa13}
+
+\bibitem[FHH$^+$14]{FHH+14}
+Y.~Filmus, H.~Hatami, S.~Heilman, E.~Mossel, R.~O'Donnell, S.~Sachdeva, A.~Wan, and K.~Wimmer,
+\emph{Real analysis in computer science: A collection of open problems},
+Simons Institute for the Theory of Computing, 2014.
+
+\bibitem[OS07]{OS07}
+R.~O'Donnell and R.~A.~Servedio,
+Learning monotone decision trees in polynomial time,
+\emph{SIAM J.~Comput.}\ 37(3):827--844, 2007.
+
+\bibitem[ScTa13]{ScTa13}
+D.~Scheder and L.-Y.~Tan,
+On the average sensitivity and density of \(k\)-CNF formulas,
+in \emph{Approximation, Randomization, and Combinatorial Optimization (APPROX/RANDOM 2013)},
+Lecture Notes in Computer Science, vol.\ 8096, Springer, Berlin, Heidelberg, 2013, pp.\ 683--698.
+
+\end{thebibliography}
+
+\end{document}

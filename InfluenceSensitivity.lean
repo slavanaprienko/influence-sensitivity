@@ -1,3 +1,2 @@
 import InfluenceSensitivity.Basic
 import InfluenceSensitivity.TwoThirds
-import InfluenceSensitivity.Oriented
