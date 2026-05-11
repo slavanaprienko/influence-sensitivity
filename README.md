@@ -2,6 +2,8 @@
 
 Lean 4 formalization of a new best construction for the monotone influence-sensitivity tradeoff, improving the bound of O'Donnell–Servedio (2007).
 
+> **Note.** An earlier version of the accompanying paper claimed a small additional improvement of the exponent above `2/3` (an "η-bump" on the order of `10⁻⁴`) via a biased-cascade refinement of the construction. That additional improvement turned out to be incorrect on closer inspection and has been retracted. It was never formalized in Lean. The current paper and this repository claim only the qualitative exponent `2/3`, which is the statement that is fully formalized here.
+
 ## Result
 
 We construct a family of monotone Boolean functions `H_k : (β k → Bool) → Bool` such that
@@ -14,8 +16,6 @@ where `influence f` is the total influence under the uniform measure on `{0,1}^n
 
 The main theorem is `twoThirdsExponentAchievable_unconditional` in `InfluenceSensitivity/TwoThirds.lean`. The proof uses no `sorry` and no custom axioms — only Lean's standard `propext`, `Classical.choice`, `Quot.sound`.
 
-The accompanying paper sharpens the construction to a strictly larger explicit exponent `2/3 + η` with `η > 8·10⁻⁴`, via a Poisson-tuned *biased cascade* whose recursion is confined to a fixed sub-interval `[p_-, Λ] = [0.127, 0.2]` bounded away from `0` and `1`. The qualitative `2/3` statement is what is formalized here; the explicit `η` calculation lives in the paper's appendix.
-
 ## Approach
 
 The Lean formalization proves the qualitative `2/3` exponent in two files:
@@ -26,13 +26,11 @@ The Lean formalization proves the qualitative `2/3` exponent in two files:
 
 The construction proceeds in three layers:
 
-1. **Polynomial-graph DNFs** (`polyGraph`, `polyGraphFamily` in `TwoThirds.lean`; the block itself is `monotoneDNF (polyGraphFamily E d)` using `monotoneDNF` from `Basic.lean`). Over a finite field `F = ZMod Q` with `Q` prime, build a monotone DNF whose terms are the graphs `{(t, P(t)) : t ∈ E}` of polynomials `P` of degree `< d` in `F × F`. First- and second-moment estimates on the number of satisfied graphs (`polyGraphFamily_first_moment_sum`, `polyGraphFamily_second_moment_sharp_le`) give a Paley–Zygmund lower bound `infP_polyGraphDNF_ge_sharp` on the `p`-biased influence, while the affine-cover argument bounds `maxSensitivityZero_polyGraphDNF_le` and the term-size bound gives `maxSensitivityOne_polyGraphDNF_le`. Existence of these blocks across a uniform interval of biases is packaged as `gadget_exists_for_all_biases`.
+1. **Polynomial-graph DNFs** (`polyGraph`, `polyGraphFamily` in `TwoThirds.lean`; the block itself is `monotoneDNF (polyGraphFamily E d)` using `monotoneDNF` from `Basic.lean`). Over a finite field `F = ZMod Q` with `Q` prime, build a monotone DNF whose terms are the graphs `{(t, P(t)) : t ∈ E}` of polynomials `P` of degree `< d` in `F × F`. First- and second-moment estimates on the number of satisfied graphs (`polyGraphFamily_first_moment_sum`, `polyGraphFamily_second_moment_sharp_le`) give a Paley–Zygmund lower bound `infP_polyGraphDNF_ge_sharp` on the `p`-biased influence. The trivial bounds `maxSensitivityZero_polyGraphDNF_le ≤ |F|²` (total number of variables) and `maxSensitivityOne_polyGraphDNF_le ≤ |E| ≤ |F|` (each term has size `|E|`) give the sensitivity estimates. Existence of these blocks across a uniform interval of biases is packaged as `gadget_exists_for_all_biases`.
 
 2. **Two-gadget composition** (`TwoGadgetPair`, `twoGadgetExistsForPrimes_proof`). For each prime `Q`, two polynomial-graph gadgets `B` (tuned at `p = 1/2`) and `T` (tuned at `p = 1 − outputBias B`, lying in `[2/3, 1 − c_B]`) are combined as `composedBlock T B = compose T (dual B)`. The influence-composition identity gives `Inf(composedBlock T B) ≥ c_T · c_B · Q²` and the sensitivity-composition bounds give `maxSensitivity(composedBlock T B) ≤ Q³`. Both are packaged by `composedBlock_bounds` in `Basic.lean` and instantiated by `TwoGadgetPair.composed_bounds`.
 
 3. **Scale-indexed limit** (`HQSequence`, `hQSequenceExists_proof`, `twoThirdsExponentAchievable_of_scale_bounds`). Indexing by an unbounded sequence of primes `Q_k → ∞`, the bounds `c · Q_k² ≤ Inf(H_k)` and `maxSensitivity(H_k) ≤ C · Q_k³` are fed into the analytic core `liminf_log_div_log_ge_of_scale_bounds`, yielding `liminf log Inf / log maxSensitivity ≥ 2/3`. The main theorem `twoThirdsExponentAchievable_unconditional` instantiates the abstract `TwoThirdsExponentAchievable` predicate.
-
-The paper's stronger `2/3 + η` result (η > 8·10⁻⁴) replaces step 2 with a *biased cascade* that retunes the outer block at each level to the actual output bias of the previous level and forces the recursion to live on a fixed interval `[p_-, Λ]` with `Λ = 1/5`, `r_0 = 4/5`, exploiting the smaller affine-cover constant `log(5/4)` available in the high-internal-bias regime. The Lean port of the cascade refinement is not yet included in this repository.
 
 ## Building
 
