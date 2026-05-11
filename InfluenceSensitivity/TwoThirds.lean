@@ -1593,8 +1593,8 @@ theorem twoThirdsExponentAchievable_unconditional : TwoThirdsExponentAchievable 
   exact twoThirdsExponentAchievable_of_scale_bounds S.H S.hc S.hC S.hM S.mono
     S.infLower S.sensUpper S.sensGt
 
-/-- **Achievability summary.** For any `r ≤ 2/3`, the exponent `r` is
-unconditionally achievable, and the universal upper bound `r ≤ 1` is sharp. -/
+/-- **Achievability summary.** For every `r ≤ 2/3`, the exponent `r` is achievable.
+Also, every achievable exponent satisfies the trivial upper bound `r ≤ 1`. -/
 theorem achievability_summary :
     (∀ r : ℝ, r ≤ (2 / 3 : ℝ) → ExponentAchievable r) ∧
     (∀ r : ℝ, ExponentAchievable r → r ≤ 1) :=
